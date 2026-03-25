@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import { ExtractedReceiptData } from '../ocr/ocr.service';
 import { Category } from '@prisma/client';
 
