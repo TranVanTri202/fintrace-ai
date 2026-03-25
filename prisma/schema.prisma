@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Bot {
+  id              String   @id @default(uuid())
+  name            String   // Ví dụ: "Zalo Finance Bot", "Telegram Personal Bot"
+  platform        Platform // Enum: ZALO hoặc TELEGRAM
+  token           String   @unique // Lưu Access Token để gọi API gửi tin nhắn
+  webhookSecret   String?  // Dùng để verify tin nhắn gửi tới từ Zalo/Telegram
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Quan hệ: Một Bot xử lý nhiều giao dịch
+  transactions    Transaction[]
+}
+
+model User {
+  id              String   @id @default(uuid())
+  telegramId      String?  @unique
+  zaloId          String?  @unique
+  fullName        String?
+  createdAt       DateTime @default(now())
+  
+  transactions    Transaction[]
+
+  @@index([telegramId, zaloId])
+}
+
+model Transaction {
+  id                String         @id @default(uuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+  
+  // Liên kết với con Bot đã thu thập giao dịch này
+  botId             String
+  bot               Bot            @relation(fields: [botId], references: [id])
+
+  amount            Decimal        @db.Decimal(15, 2)
+  currency          String         @default("VND")
+  vendor            String?
+  category          Category       @default(OTHERS)
+  transactionDate   DateTime       @default(now())
+  
+  imageUrl          String?
+  rawOcrText        String?        @db.Text
+  aiMetadata        Json?          
+
+  createdAt         DateTime       @default(now())
+
+  @@index([userId, transactionDate])
+}
+
+enum Platform {
+  ZALO
+  TELEGRAM
+}
+
+enum Category {
+  FOOD_DRINK
+  TRANSPORT
+  SHOPPING
+  BILLS
+  HEALTH
+  ENTERTAINMENT
+  OTHERS
+}
