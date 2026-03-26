@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ExpenseService } from '../expense/expense.service';
-import { Platform } from '@prisma/client';
+import { BOT_PLATFORM, USER_DISPLAY_NAMES } from '../../common/constants/platform.constant';
 
 @Injectable()
 export class ZaloBotListener {
@@ -38,9 +38,9 @@ export class ZaloBotListener {
               const result = await this.expenseService.processReceiptImage(
                 botId,
                 senderId,
-                'ZALO' as Platform,
+                BOT_PLATFORM.ZALO,
                 imageUrl,
-                'Người dùng Zalo'
+                USER_DISPLAY_NAMES.ZALO_USER
               );
               
               await api.sendMessage({ body: result.message }, senderId);

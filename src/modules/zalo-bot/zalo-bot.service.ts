@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { ExpenseService } from '../expense/expense.service';
 import { ZaloBotListener } from './zalo-bot.listener';
+import { BOT_NAMES, BOT_PLATFORM } from '../../common/constants/platform.constant';
 // zca-js không có TypeScript types mặc định, dùng require
 const { Zalo } = require('zca-js');
 
@@ -19,7 +20,7 @@ export class ZaloBotService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     this.logger.log('Đang khôi phục (restore) session cho bot ZALO từ Database...');
     const dbBots = await this.prisma.bot.findMany({
-      where: { platform: 'ZALO', isActive: true },
+      where: { platform: BOT_PLATFORM.ZALO, isActive: true },
     });
     const bots = dbBots.filter((b) => b.sessionData !== null);
 
@@ -30,7 +31,7 @@ export class ZaloBotService implements OnApplicationBootstrap {
     }
   }
 
-  async generateQRCodeAndSaveToDb(botName = 'Zalo Personal Bot') {
+  async generateQRCodeAndSaveToDb(botName = BOT_NAMES.ZALO_DEFAULT) {
     try {
       this.logger.log(`📢 Đang tạo mã QR mới cho ${botName}...`);
       const zalo = new Zalo({ selfListen: true, checkUpdate: true, logging: true });
@@ -47,7 +48,7 @@ export class ZaloBotService implements OnApplicationBootstrap {
       const bot = await this.prisma.bot.create({
         data: {
           name: botName,
-          platform: 'ZALO',
+          platform: BOT_PLATFORM.ZALO,
           sessionData: sessionData as any,
           isActive: true,
         },

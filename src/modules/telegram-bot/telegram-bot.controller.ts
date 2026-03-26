@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Logger, Param } from '@nestjs/common';
 import { ExpenseService } from '../expense/expense.service';
 import { TelegramBotService } from './telegram-bot.service';
+import { BOT_PLATFORM, USER_DISPLAY_NAMES } from '../../common/constants/platform.constant';
 
 @Controller('webhook/telegram')
 export class TelegramBotController {
@@ -37,9 +38,9 @@ export class TelegramBotController {
       const processResult = await this.expenseService.processReceiptImage(
         botId,
         chatId,
-        'TELEGRAM',
+        BOT_PLATFORM.TELEGRAM,
         imageUrl,
-        fullName
+        fullName || USER_DISPLAY_NAMES.TELEGRAM_USER
       );
 
       // Trả kết quả AI qua tin nhắn Telegram
