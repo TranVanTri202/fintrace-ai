@@ -5,14 +5,14 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model Bot {
   id              String   @id @default(uuid())
   name            String   // Ví dụ: "Zalo Finance Bot", "Telegram Personal Bot"
   platform        Platform // Enum: ZALO hoặc TELEGRAM
-  token           String   @unique // Lưu Access Token để gọi API gửi tin nhắn
+  token           String?  @unique // Dùng cho Telegram hoặc Zalo OA
+  sessionData     Json?    // Dùng để lưu thông tin zca-js (cookie, imei, userAgent)
   webhookSecret   String?  // Dùng để verify tin nhắn gửi tới từ Zalo/Telegram
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -27,6 +27,7 @@ model User {
   telegramId      String?  @unique
   zaloId          String?  @unique
   fullName        String?
+  avatar            String?
   createdAt       DateTime @default(now())
   
   transactions    Transaction[]
