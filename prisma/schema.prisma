@@ -18,8 +18,9 @@ model Bot {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Quan hệ: Một Bot xử lý nhiều giao dịch
+  // Quan hệ: Một Bot xử lý nhiều giao dịch và tin nhắn
   transactions    Transaction[]
+  messages        Message[]
 }
 
 model User {
@@ -31,8 +32,34 @@ model User {
   createdAt       DateTime @default(now())
   
   transactions    Transaction[]
+  messages        Message[]
 
   @@index([telegramId, zaloId])
+}
+
+model Message {
+  id              String         @id @default(uuid())
+  botId           String
+  bot             Bot            @relation(fields: [botId], references: [id])
+  
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  
+  content         String?        @db.Text
+  msgType         String?        // webchat, chat.photo, ...
+  direction       MessageDirection
+  
+  // Lưu metadata thô từ bot nếu cần
+  rawPayload      Json?
+
+  createdAt       DateTime       @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum MessageDirection {
+  INCOMING // Từ người dùng tới Bot
+  OUTGOING // Từ Bot tới người dùng
 }
 
 model Transaction {

@@ -3,6 +3,7 @@ import { OcrService } from '../ocr/ocr.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { UserService } from '../user/user.service';
 import { Platform } from '@prisma/client';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ExpenseService {
@@ -12,6 +13,7 @@ export class ExpenseService {
     private readonly ocrService: OcrService,
     private readonly transactionService: TransactionService,
     private readonly userService: UserService,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -28,12 +30,18 @@ export class ExpenseService {
       this.logger.log(`[ExpenseProcessor] Nhận ảnh hóa đơn từ ${platform} ID: ${platformId}`);
       
       const user = await this.userService.getOrCreateUserByPlatform(platformId, platform, fullName);
-      const extractedData = await this.ocrService.extractReceiptData(imageUrl);
 
+      // 1. Upload ảnh lên Supabase Storage để lấy link public ổn định
+      const publicUrl = await this.storageService.uploadFromUrl(imageUrl);
+
+      // 2. Sử dụng link Supabase để gọi OpenAI
+      const extractedData = await this.ocrService.extractReceiptData(publicUrl);
+
+      // 3. Lưu giao dịch với link ảnh đã đẩy lên Supabase
       const transaction = await this.transactionService.saveExtractedReceipt(
         user.id,
         botId,
-        imageUrl,
+        publicUrl,
         extractedData
       );
 

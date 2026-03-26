@@ -14,7 +14,7 @@ export class ZaloBotController {
    */
   @Get('qr')
   async generateQR() {
-    return this.zaloBotService.generateQRCodeAndSaveToDb('Zalo Expense Bot');
+    return this.zaloBotService.generateQRCodeAndSaveToDb('Zalo Personal Bot');
   }
 
   /**

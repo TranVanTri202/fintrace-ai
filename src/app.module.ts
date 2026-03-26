@@ -10,6 +10,10 @@ import { ExpenseModule } from './modules/expense/expense.module';
 import { ZaloBotModule } from './modules/zalo-bot/zalo-bot.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
+import { ChatModule } from './modules/chat/chat.module';
+import { AiModule } from './modules/ai/ai.module';
+import { StorageModule } from './modules/storage/storage.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +23,9 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
       validate,
     }),
     DatabaseModule,
+    ChatModule,
+    AiModule,
+    StorageModule,
     UserModule,
     OcrModule,
     TransactionModule,

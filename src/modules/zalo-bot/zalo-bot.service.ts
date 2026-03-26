@@ -3,7 +3,6 @@ import { PrismaService } from '../../database/prisma.service';
 import { ExpenseService } from '../expense/expense.service';
 import { ZaloBotListener } from './zalo-bot.listener';
 import { BOT_NAMES, BOT_PLATFORM } from '../../common/constants/platform.constant';
-// zca-js không có TypeScript types mặc định, dùng require
 const { Zalo } = require('zca-js');
 
 @Injectable()
@@ -18,23 +17,29 @@ export class ZaloBotService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    this.logger.log('Đang khôi phục (restore) session cho bot ZALO từ Database...');
+    this.logger.log('🔄 Đang kiểm tra và khôi phục session cho bot ZALO từ Database...');
     const dbBots = await this.prisma.bot.findMany({
       where: { platform: BOT_PLATFORM.ZALO, isActive: true },
     });
-    const bots = dbBots.filter((b) => b.sessionData !== null);
+    
+    const botsToRestore = dbBots.filter((b) => b.sessionData !== null);
 
-    for (const bot of bots) {
-      if (bot.sessionData) {
-        await this.loginFromDbSession(bot.id, bot.sessionData);
-      }
+    if (botsToRestore.length === 0) {
+      this.logger.log('ℹ️ Không có Bot ZALO nào cần khôi phục.');
+      return;
+    }
+
+    this.logger.log(`⏳ Tìm thấy ${botsToRestore.length} Bot ZALO đang active. Bắt đầu đăng nhập...`);
+
+    for (const bot of botsToRestore) {
+      await this.loginFromDbSession(bot.id, bot.name, bot.sessionData);
     }
   }
 
   async generateQRCodeAndSaveToDb(botName = BOT_NAMES.ZALO_DEFAULT) {
     try {
       this.logger.log(`📢 Đang tạo mã QR mới cho ${botName}...`);
-      const zalo = new Zalo({ selfListen: true, checkUpdate: true, logging: true });
+      const zalo = new Zalo({ selfListen: false, checkUpdate: true, logging: true });
       const api = await zalo.loginQR();
 
       const { uid, imei, cookie, userAgent } = api.getContext();
@@ -54,7 +59,7 @@ export class ZaloBotService implements OnApplicationBootstrap {
         },
       });
 
-      this.logger.log(`✅ Đăng nhập QR thành công cho Bot ID: ${bot.id}`);
+      this.logger.log(`✅ Đăng nhập QR thành công cho Bot: ${bot.name} (ID: ${bot.id})`);
       this.zaloInstances[bot.id] = api;
       
       // Sử dụng listener chuyên biệt
@@ -67,21 +72,22 @@ export class ZaloBotService implements OnApplicationBootstrap {
     }
   }
 
-  private async loginFromDbSession(botId: string, credentials: any) {
+  private async loginFromDbSession(botId: string, botName: string, credentials: any) {
     try {
       const { cookie, imei, userAgent } = credentials;
-      const zalo = new Zalo({ selfListen: true, checkUpdate: false, logging: false });
+      const zalo = new Zalo({ selfListen: false, checkUpdate: false, logging: false });
       const api = await zalo.login({ cookie, imei, userAgent });
 
       if (typeof api.getContext === 'function') {
-        this.logger.log(`✅ Khôi phục thành công ZALO Bot: ${botId}`);
+        this.logger.log(`🚀 Khôi phục thành công ZALO Bot: ${botName} (ID: ${botId})`);
         this.zaloInstances[botId] = api;
         
         // Khởi động listener sau khi login thành công bằng session
         await this.zaloBotListener.listen(botId, api);
       }
     } catch (error: any) {
-      this.logger.error(`❌ Lỗi khôi phục Bot ${botId}: ${error.message}`);
+      this.logger.error(`⚠️ Không thể khôi phục ZALO Bot: ${botName} (ID: ${botId}). Lỗi: ${error.message}`);
+      // Nếu lỗi do session hết hạn, ta nên đánh dấu bot là inactive
       await this.prisma.bot.update({ where: { id: botId }, data: { isActive: false } });
     }
   }
@@ -90,7 +96,7 @@ export class ZaloBotService implements OnApplicationBootstrap {
     const botIds = Object.keys(this.zaloInstances);
     if (botIds.length > 0) {
       const api = this.zaloInstances[botIds[0]];
-      await api.sendMessage({ body: message }, toId);
+      await api.sendMessage({ msg: message }, toId, 0);
     }
   }
 }
