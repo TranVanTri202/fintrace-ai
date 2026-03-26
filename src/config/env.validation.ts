@@ -27,13 +27,21 @@ class EnvironmentVariables {
   @IsNotEmpty({ message: 'OPENAI_API_KEY không được để trống' })
   OPENAI_API_KEY: string;
 
-  @IsString()
-  @IsNotEmpty({ message: 'TELEGRAM_BOT_TOKEN không được để trống' })
-  TELEGRAM_BOT_TOKEN: string;
+  // @IsString()
+  // @IsNotEmpty({ message: 'TELEGRAM_BOT_TOKEN không được để trống' })
+  // TELEGRAM_BOT_TOKEN: string;
+
+  // @IsString()
+  // @IsNotEmpty({ message: 'ZALO_ACCESS_TOKEN không được để trống' })
+  // ZALO_ACCESS_TOKEN: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'ZALO_ACCESS_TOKEN không được để trống' })
-  ZALO_ACCESS_TOKEN: string;
+  @IsNotEmpty({ message: 'SUPABASE_URL không được để trống' })
+  SUPABASE_URL: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'SUPABASE_KEY không được để trống' })
+  SUPABASE_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {

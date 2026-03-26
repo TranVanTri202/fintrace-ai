@@ -11,4 +11,8 @@ export default () => ({
     telegramToken: process.env.TELEGRAM_BOT_TOKEN,
     zaloToken: process.env.ZALO_ACCESS_TOKEN,
   },
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY,
+  },
 });
