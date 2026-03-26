@@ -39,9 +39,9 @@ export class TelegramController {
       );
 
       // Reply back
-      await this.botService.sendMessage('TELEGRAM', 'YOUR_BOT_TOKEN', chatId, processResult.message);
+      await this.botService.sendMessage('TELEGRAM', chatId, processResult.message);
     } else {
-      await this.botService.sendMessage('TELEGRAM', 'YOUR_BOT_TOKEN', chatId, 'Vui lòng gửi ảnh hóa đơn để FinTrace phân tích!');
+      await this.botService.sendMessage('TELEGRAM', chatId, 'Vui lòng gửi ảnh hóa đơn để FinTrace phân tích!');
     }
 
     return 'OK'; // Phải trả về OK để Telegram không gửi lại Webhook

@@ -22,7 +22,7 @@ export class OcrService {
   ) {}
 
   async extractReceiptData(imageUrl: string): Promise<ExtractedReceiptData> {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+    const apiKey = this.configService.get<string>('openai.apiKey');
     
     if (!apiKey) {
       throw new HttpException('OpenAI API Key is missing', HttpStatus.INTERNAL_SERVER_ERROR);

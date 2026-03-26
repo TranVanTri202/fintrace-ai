@@ -24,7 +24,7 @@ export class ZaloController {
     const zaloId = sender.id.toString();
 
     if (eventName === 'user_send_text') {
-      await this.botService.sendMessage('ZALO', 'ZALO_ACCESS_TOKEN', zaloId, 'Vui lòng gửi ảnh hóa đơn để FinTrace phân tích!');
+      await this.botService.sendMessage('ZALO', zaloId, 'Vui lòng gửi ảnh hóa đơn để FinTrace phân tích!');
     }
 
     if (eventName === 'user_send_image' && message?.attachments?.length > 0) {
@@ -43,7 +43,7 @@ export class ZaloController {
           'Zalo User'
         );
 
-        await this.botService.sendMessage('ZALO', 'ZALO_ACCESS_TOKEN', zaloId, processResult.message);
+        await this.botService.sendMessage('ZALO', zaloId, processResult.message);
       }
     }
 

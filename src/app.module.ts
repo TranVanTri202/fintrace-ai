@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { BotModule } from './modules/bot/bot.module';
 import { OcrModule } from './modules/ocr/ocr.module';
@@ -11,6 +12,7 @@ import { UserModule } from './modules/user/user.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: [configuration],
     }),
     DatabaseModule,
     UserModule,
@@ -21,4 +23,4 @@ import { UserModule } from './modules/user/user.module';
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

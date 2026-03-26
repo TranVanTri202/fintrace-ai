@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OcrService } from '../ocr/ocr.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { UserService } from '../user/user.service';
@@ -9,6 +10,7 @@ export class BotService {
   private readonly logger = new Logger(BotService.name);
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly ocrService: OcrService,
     private readonly transactionService: TransactionService,
     private readonly userService: UserService,
@@ -58,10 +60,15 @@ export class BotService {
 
   /**
    * Generic Method to send message to Telegram/Zalo
-   * (Nên triển khai HttpService gửi request tới API của Zalo/Telegram)
+   * Lấy token từ ConfigService
    */
-  async sendMessage(platform: Platform, botToken: string, toId: string, message: string) {
-    this.logger.log(`[${platform}] Gửi tin nhắn tới ${toId}: ${message}`);
+  async sendMessage(platform: Platform, toId: string, message: string) {
+    const telegramToken = this.configService.get<string>('bot.telegramToken');
+    const zaloToken = this.configService.get<string>('bot.zaloToken');
+
+    const botToken = platform === 'TELEGRAM' ? telegramToken : zaloToken;
+    this.logger.log(`[${platform}] Gửi tin nhắn tới ${toId}: ${message} dùng token ${botToken ? '***' : 'null'}`);
+    
     // Thực hiện logic gọi API theo từng Platform
     // Ví dụ Telegram: POST https://api.telegram.org/bot${botToken}/sendMessage
     // Ví dụ Zalo: POST https://openapi.zalo.me/v2.0/oa/message
