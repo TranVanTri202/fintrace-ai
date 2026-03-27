@@ -21,19 +21,23 @@ export class OcrService {
     private readonly configService: ConfigService,
   ) {}
 
-  async extractReceiptData(imageUrl: string): Promise<ExtractedReceiptData> {
+  async extractReceiptData(image: string): Promise<ExtractedReceiptData> {
     const apiKey = this.configService.get<string>('openai.apiKey');
     
     if (!apiKey) {
       throw new HttpException('OpenAI API Key is missing', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    // Nếu không phải URL thì hiểu là Base64 và thêm prefix
+    const imageUrl = image.startsWith('http') ? image : `data:image/jpeg;base64,${image}`;
+    
     const payload = {
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "Bạn là một AI thông minh phân tích hóa đơn chuẩn xác. Bạn luôn trả dữ liệu dưới dạng JSON thuần túy."
+          content: "Bạn là một AI thông minh phân tích hóa đơn chuẩn xác. Bạn luôn trả dữ liệu dưới dạng JSON thuần túy.\n" +
+                  "LƯU Ý: Nếu hình ảnh KHÔNG phải là hóa đơn mua hàng, hãy trả về JSON với các trường mang giá trị null, ví dụ: { \"vendor\": null, \"amount\": 0, \"due_date\": null, \"category\": \"OTHERS\", \"items\": [] }"
         },
         {
           role: "user",
@@ -41,7 +45,7 @@ export class OcrService {
             {
               type: "text",
               text: "Trích xuất hóa đơn này thành JSON theo cấu trúc sau:\n" +
-                    "{ \"vendor\": \"Tên cửa hàng\", \"amount\": tổng_tiền_chỉ_lấy_số_float, \"due_date\": \"YYYY-MM-DD\", \"category\": \"[chọn 1 trong: FOOD_DRINK, TRANSPORT, SHOPPING, BILLS, HEALTH, ENTERTAINMENT, OTHERS]\", \"items\": [{\"name\": \"Tên món\", \"price\": giá_tiền}] }"
+                    "{ \"vendor\": \"Tên cửa hàng\", \"amount\": số tiền thực tế (GIÁ TRỊ DƯƠNG) người dùng đã thanh toán (sau khi trừ giảm giá, khuyến mãi), \"due_date\": \"YYYY-MM-DD\", \"category\": \"[chọn 1 trong: FOOD_DRINK, TRANSPORT, SHOPPING, BILLS, HEALTH, ENTERTAINMENT, OTHERS]\", \"items\": [{\"name\": \"Tên món\", \"price\": giá_tiền}] }"
             },
             {
               type: "image_url",
@@ -57,7 +61,6 @@ export class OcrService {
     };
 
     try {
-      this.logger.log(`Call OpenAI cho URL: ${imageUrl}`);
       const response = await lastValueFrom(
         this.httpService.post(this.openAiUrl, payload, {
           headers: {

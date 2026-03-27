@@ -55,4 +55,29 @@ export class StorageService {
       return imageUrl;
     }
   }
+  /**
+   * Upload ảnh trực tiếp từ Buffer lên Supabase Storage
+   */
+  async uploadBuffer(buffer: Buffer, contentType: string, folder = 'image_bill'): Promise<string> {
+    try {
+      const fileName = `${folder}/${uuidv4()}.jpg`;
+      const { error } = await this.supabase.storage
+        .from(this.bucketName)
+        .upload(fileName, buffer, {
+          contentType,
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = this.supabase.storage
+        .from(this.bucketName)
+        .getPublicUrl(fileName);
+
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      this.logger.error(`❌ Lỗi khi upload Buffer lên Supabase: ${error.message}`);
+      throw error;
+    }
+  }
 }

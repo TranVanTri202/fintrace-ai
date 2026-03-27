@@ -4,6 +4,8 @@ import { TransactionService } from '../transaction/transaction.service';
 import { UserService } from '../user/user.service';
 import { Platform } from '@prisma/client';
 import { StorageService } from '../storage/storage.service';
+import { AiService } from '../ai/ai.service';
+import axios from 'axios';
 
 @Injectable()
 export class ExpenseService {
@@ -14,6 +16,7 @@ export class ExpenseService {
     private readonly transactionService: TransactionService,
     private readonly userService: UserService,
     private readonly storageService: StorageService,
+    private readonly aiService: AiService,
   ) {}
 
   /**
@@ -31,11 +34,28 @@ export class ExpenseService {
       
       const user = await this.userService.getOrCreateUserByPlatform(platformId, platform, fullName);
 
-      // 1. Upload ảnh lên Supabase Storage để lấy link public ổn định
-      const publicUrl = await this.storageService.uploadFromUrl(imageUrl);
+      // 1. Tải ảnh về để xử lý (Tránh lỗi OpenAI không tải được từ Supabase URL)
+      this.logger.log(`📥 Đang tải ảnh từ ${platform} để xử lý...`);
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const buffer = Buffer.from(response.data, 'binary');
+      const base64 = buffer.toString('base64');
 
-      // 2. Sử dụng link Supabase để gọi OpenAI
-      const extractedData = await this.ocrService.extractReceiptData(publicUrl);
+      // 2. Upload lên Supabase Storage (luôn upload để có link lưu vào DB)
+      const publicUrl = await this.storageService.uploadBuffer(
+        buffer,
+        response.headers['content-type'] || 'image/jpeg'
+      );
+
+      // 3. Sử dụng Base64 để gọi OpenAI (Nhanh và ổn định hơn gửi URL)
+      const extractedData = await this.ocrService.extractReceiptData(base64);
+
+      // Kiểm tra nếu AI không nhận diện được hóa đơn (trường hợp chụp ảnh linh tinh)
+      if (!extractedData.vendor || extractedData.vendor === 'Tên cửa hàng' || extractedData.vendor === 'null' || extractedData.amount === 0) {
+        return {
+          success: false,
+          message: 'Ơ, hình như đây không phải là ảnh hóa đơn mua hàng rồi. Bạn vui lòng chụp lại rõ nét hơn nhé! 📸',
+        };
+      }
 
       // 3. Lưu giao dịch với link ảnh đã đẩy lên Supabase
       const transaction = await this.transactionService.saveExtractedReceipt(
@@ -45,12 +65,21 @@ export class ExpenseService {
         extractedData
       );
 
+      // 4. Tạo câu trả lời hóm hỉnh từ AI
+      const aiMessage = await this.aiService.generateTransactionConfirmation(extractedData);
+      
       return {
         success: true,
-        message: `✅ Đã lưu chi tiêu: ${extractedData.vendor} - ${extractedData.amount} VNĐ (${extractedData.category})`,
+        message: aiMessage,
         transaction,
       };
     } catch (error: any) {
+      if (error.message === 'DUPLICATE_TRANSACTION') {
+        return {
+          success: false,
+          message: '⚠️ Hình như hóa đơn này bạn đã lưu trước đó rồi nha. Mình không lưu lại nữa đâu nè!',
+        };
+      }
       this.logger.error(`❌ Lỗi xử lý hóa đơn cho ${platformId}: ${error.message}`);
       return {
         success: false,
