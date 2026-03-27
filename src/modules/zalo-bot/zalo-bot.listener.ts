@@ -4,8 +4,10 @@ import { BOT_PLATFORM, USER_DISPLAY_NAMES } from '../../common/constants/platfor
 import { ChatService } from '../chat/chat.service';
 import { UserService } from '../user/user.service';
 import { MessageDirection } from '@prisma/client';
-
 import { AiService } from '../ai/ai.service';
+import { TransactionService } from '../transaction/transaction.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ZaloBotListener {
@@ -16,6 +18,7 @@ export class ZaloBotListener {
     private readonly chatService: ChatService,
     private readonly userService: UserService,
     private readonly aiService: AiService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   /**
@@ -88,8 +91,45 @@ export class ZaloBotListener {
       });
 
       // Lấy câu trả lời từ AI (bao gồm 10 tin nhắn gần nhất làm context)
-      const replyMsg = await this.aiService.getChatResponse(botId, userId);
+      let replyMsg = await this.aiService.getChatResponse(botId, userId);
+      console.log("replyMsgreplyMsg", replyMsg);
       
+      // Kiểm tra xem AI có yêu cầu xuất Excel không thông qua Tag đặc biệt
+      if (replyMsg.includes('[TRIGGER_EXPORT_EXCEL]')) {
+        this.logger.log('📊 AI yêu cầu xuất báo cáo Excel...');
+        
+        // Xóa Tag khỏi tin nhắn trước khi gửi cho User
+        replyMsg = replyMsg.replace('[TRIGGER_EXPORT_EXCEL]', '').trim();
+
+        await api.sendMessage({ msg: 'Đợi mình một xíu, mình đang tạo file báo cáo chi tiêu cho bạn đây... ⏳' }, senderId, 0);
+
+        const buffer = await this.transactionService.generateExcelExport(userId);
+        const fileName = `Bao_cao_chi_tieu_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`;
+
+        // Gửi file trực tiếp từ Buffer
+        
+        await api.sendMessage(
+          {
+            msg: 'Dạ, file báo cáo chi tiêu của bạn đã được tạo thành công! 📊',
+            attachments: [
+              {
+                data: buffer,
+                filename: fileName,
+                metadata: {
+                  totalSize: buffer.length,
+                },
+              },
+            ],
+          },
+          senderId,
+          0 
+        );
+
+        if (!replyMsg) {
+          replyMsg = 'Bạn có thể tải file ở trên để xem chi tiết nhé. 😊';
+        }
+      }
+
       // Gửi đi theo signature chuẩn của user: api.sendMessage({ msg: '...' }, id, 0)
       await api.sendMessage({ msg: replyMsg }, senderId, 0);
 

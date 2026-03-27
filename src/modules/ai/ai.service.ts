@@ -102,6 +102,14 @@ export class AiService {
             },
           },
         },
+        {
+          type: 'function',
+          function: {
+            name: 'export_to_excel',
+            description: 'Tạo và xuất báo cáo danh sách chi tiêu ra file Excel để người dùng tải về.',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
       ];
 
       // 3. Gọi OpenAI lần 1
@@ -155,6 +163,9 @@ export class AiService {
                 list.map(t => `- ${t.vendor}: ${t.amount} VNĐ (${t.category}) vào lúc ${t.time}`).join('\n');
             }
           }
+          else if (tCall.function.name === 'export_to_excel') {
+            resultString = '[TRIGGER_EXPORT_EXCEL]';
+          }
 
           toolMessages.push({
             tool_call_id: tCall.id,
@@ -164,10 +175,16 @@ export class AiService {
           });
         }
 
-        // Gọi OpenAI lần 2 để tổng hợp câu trả lời
+        // Gọi OpenAI lần 2 với kết quả của Tool
         const secondResponse = await this.openai.chat.completions.create({
           model: 'gpt-4o-mini',
-          messages: toolMessages,
+          messages: [
+            ...toolMessages,
+            {
+              role: 'system',
+              content: 'Nếu có bất kỳ tool nào báo kết quả là [TRIGGER_EXPORT_EXCEL], hãy chèn chính xác chuỗi [TRIGGER_EXPORT_EXCEL] vào cuối câu trả lời của bạn để hệ thống biết cần gửi file đính kèm.'
+            }
+          ],
         });
 
         return secondResponse.choices[0].message.content || 'Tôi đã tìm thấy thông tin nhưng không thể diễn đạt lại được.';

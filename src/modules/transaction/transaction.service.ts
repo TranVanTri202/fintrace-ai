@@ -2,12 +2,48 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { ExtractedReceiptData } from '../ocr/ocr.service';
 import { Category } from '@prisma/client';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class TransactionService {
   private readonly logger = new Logger(TransactionService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Xuất danh sách chi tiêu ra file Excel (Buffer)
+   */
+  async generateExcelExport(userId: string): Promise<Buffer> {
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { transactionDate: 'desc' },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Chi tiêu FinTrace');
+
+    worksheet.columns = [
+      { header: 'Ngày', key: 'date', width: 20 },
+      { header: 'Cửa hàng/Nội dung', key: 'vendor', width: 30 },
+      { header: 'Số tiền (VNĐ)', key: 'amount', width: 15 },
+      { header: 'Danh mục', key: 'category', width: 20 },
+    ];
+
+    transactions.forEach(t => {
+      worksheet.addRow({
+        date: t.transactionDate.toLocaleDateString('vi-VN'),
+        vendor: t.vendor || 'N/A',
+        amount: Number(t.amount),
+        category: t.category,
+      });
+    });
+
+    // Định dạng header
+    worksheet.getRow(1).font = { bold: true };
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
+  }
 
   async saveExtractedReceipt(
     userId: string,
