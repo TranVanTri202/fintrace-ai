@@ -209,14 +209,36 @@ export class TransactionService {
       });
 
       return transactions.map(t => ({
+        id: t.id,
         vendor: t.vendor,
-        amount: Math.abs(Number(t.amount)), // Chuyển sang số dương để AI báo dễ nghe
+        amount: Math.abs(Number(t.amount)), 
         category: t.category,
+        date: t.transactionDate.toLocaleDateString('vi-VN'),
         time: t.transactionDate.toLocaleTimeString('vi-VN'),
       }));
     } catch (error: any) {
       this.logger.error(`❌ Lỗi khi lấy danh sách chi tiêu theo ngày: ${error.message}`);
       return [];
     }
+  }
+
+  /**
+   * Lấy danh sách giao dịch gần đây để xác nhận xóa
+   */
+  async getRecentTransactions(userId: string, limit = 5) {
+    return await this.prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Xóa giao dịch theo ID
+   */
+  async deleteTransactionById(id: string) {
+    return await this.prisma.transaction.delete({
+      where: { id },
+    });
   }
 }

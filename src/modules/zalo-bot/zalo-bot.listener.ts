@@ -92,7 +92,6 @@ export class ZaloBotListener {
 
       // Lấy câu trả lời từ AI (bao gồm 10 tin nhắn gần nhất làm context)
       let replyMsg = await this.aiService.getChatResponse(botId, userId);
-      console.log("replyMsgreplyMsg", replyMsg);
       
       // Kiểm tra xem AI có yêu cầu xuất Excel không thông qua Tag đặc biệt
       if (replyMsg.includes('[TRIGGER_EXPORT_EXCEL]')) {

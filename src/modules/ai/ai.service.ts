@@ -110,6 +110,28 @@ export class AiService {
             parameters: { type: 'object', properties: {} },
           },
         },
+        {
+          type: 'function',
+          function: {
+            name: 'get_recent_transactions',
+            description: 'Lấy danh sách các giao dịch gần nhất để người dùng xác nhận trước khi xóa.',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'delete_transaction_by_id',
+            description: 'Xóa vĩnh viễn một giao dịch dựa trên ID.',
+            parameters: {
+              type: 'object',
+              properties: {
+                transactionId: { type: 'string', description: 'ID của giao dịch cần xóa.' },
+              },
+              required: ['transactionId'],
+            },
+          },
+        },
       ];
 
       // 3. Gọi OpenAI lần 1
@@ -165,6 +187,17 @@ export class AiService {
           }
           else if (tCall.function.name === 'export_to_excel') {
             resultString = '[TRIGGER_EXPORT_EXCEL]';
+          }
+          else if (tCall.function.name === 'get_recent_transactions') {
+            const list = await this.transactionService.getRecentTransactions(userId);
+            resultString = list.length > 0 
+              ? 'Danh sách giao dịch gần đây:\n' + list.map((t, i) => `${i + 1}. ID: ${t.id} - ${t.vendor}: ${Number(t.amount)} VNĐ (${t.transactionDate.toLocaleDateString('vi-VN')})`).join('\n')
+              : 'Bạn chưa có giao dịch nào gần đây.';
+          }
+          else if (tCall.function.name === 'delete_transaction_by_id') {
+            const args = JSON.parse(tCall.function.arguments);
+            await this.transactionService.deleteTransactionById(args.transactionId);
+            resultString = 'Đã xóa giao dịch thành công.';
           }
 
           toolMessages.push({
