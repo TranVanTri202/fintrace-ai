@@ -26,8 +26,8 @@ Ask the bot about your financial status using natural language:
 - Beyond money management, FinTrace AI is an intelligent "friend" that can chat, answer general questions, or simply remind you to save more every day.
 
 ---
-======================================================================
-tiếng Việt ❤️
+==============tiếng Việt❤️==============
+
 # FinTrace AI - Trợ Lý Quản Lý Chi Tiêu Thông Minh
 
 FinTrace AI là hệ thống quản lý tài chính cá nhân tự động, giúp bạn theo dõi và phân tích chi tiêu ngay trên các nền tảng nhắn tin phổ biến như Zalo và Telegram. Không còn cảnh phải nhập liệu thủ công từng con số khô khan, FinTrace AI biến việc quản lý tiền bạc trở nên dễ dàng và thú vị như đang trò chuyện với một người bạn.
