@@ -94,13 +94,20 @@ export class TransactionService {
       throw error;
     }
   }
-  async getHighestSpendingDay(userId: string) {
+  async getHighestSpendingDay(userId: string, startDate?: Date, endDate?: Date) {
     try {
       this.logger.log(`🔍 Đang tìm ngày tiêu tiền nhiều nhất cho user: ${userId}`);
       
+      const where: any = { userId };
+      if (startDate || endDate) {
+        where.transactionDate = {};
+        if (startDate) where.transactionDate.gte = startDate;
+        if (endDate) where.transactionDate.lte = endDate;
+      }
+
       const result = await this.prisma.transaction.groupBy({
         by: ['transactionDate'],
-        where: { userId },
+        where,
         _sum: {
           amount: true,
         },
@@ -127,13 +134,20 @@ export class TransactionService {
   /**
    * Tìm ngày tiêu tiền ít nhất (nhưng phải có chi tiêu > 0)
    */
-  async getLowestSpendingDay(userId: string) {
+  async getLowestSpendingDay(userId: string, startDate?: Date, endDate?: Date) {
     try {
       this.logger.log(`🔍 Đang tìm ngày tiêu tiền ít nhất cho user: ${userId}`);
       
+      const where: any = { userId, amount: { gt: 0 } };
+      if (startDate || endDate) {
+        where.transactionDate = {};
+        if (startDate) where.transactionDate.gte = startDate;
+        if (endDate) where.transactionDate.lte = endDate;
+      }
+
       const result = await this.prisma.transaction.groupBy({
         by: ['transactionDate'],
-        where: { userId, amount: { gt: 0 } },
+        where,
         _sum: {
           amount: true,
         },

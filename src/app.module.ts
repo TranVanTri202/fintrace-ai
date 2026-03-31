@@ -13,6 +13,9 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { AiModule } from './modules/ai/ai.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReportModule } from './modules/report/report.module';
+import { CronModule } from './modules/cron/cron.module';
 
 @Module({
   imports: [
@@ -22,6 +25,7 @@ import { StorageModule } from './modules/storage/storage.module';
       load: [configuration],
       validate,
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     ChatModule,
     AiModule,
@@ -32,6 +36,8 @@ import { StorageModule } from './modules/storage/storage.module';
     ExpenseModule,
     ZaloBotModule,
     TelegramBotModule,
+    ReportModule,
+    CronModule,
   ],
   controllers: [],
   providers: [],
